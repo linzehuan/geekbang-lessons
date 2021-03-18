@@ -1,5 +1,6 @@
 package org.geektimes.web.mvc;
 
+import jdk.nashorn.internal.ir.CallNode;
 import org.apache.commons.lang.StringUtils;
 import org.geektimes.web.mvc.controller.Controller;
 import org.geektimes.web.mvc.controller.PageController;
@@ -7,10 +8,7 @@ import org.geektimes.web.mvc.controller.RestController;
 import org.geektimes.web.mvc.header.CacheControlHeaderWriter;
 import org.geektimes.web.mvc.header.annotation.CacheControl;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
+import javax.servlet.*;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -20,6 +18,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.Path;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -149,7 +148,12 @@ public class FrontControllerServlet extends HttpServlet {
                         requestDispatcher.forward(request, response);
                         return;
                     } else if (controller instanceof RestController) {
-                        // TODO
+                        RestController pageController = RestController.class.cast(controller);
+                        String data = pageController.execute(request, response);
+                        PrintWriter outputStream = response.getWriter();
+                        outputStream.write(data);
+                        outputStream.close();
+                        return;
                     }
 
                 }

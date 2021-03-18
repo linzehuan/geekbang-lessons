@@ -5,6 +5,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.Converter;
+import org.geektimes.configuration.microprofile.config.converter.StringConverter;
 
 import java.util.*;
 
@@ -14,6 +15,8 @@ public class JavaConfig implements Config {
      * 内部可变的集合，不要直接暴露在外面
      */
     private List<ConfigSource> configSources = new LinkedList<>();
+
+    private Map<String,Converter> converters = new HashMap();
 
     private static Comparator<ConfigSource> configSourceComparator = new Comparator<ConfigSource>() {
         @Override
@@ -28,13 +31,22 @@ public class JavaConfig implements Config {
         serviceLoader.forEach(configSources::add);
         // 排序
         configSources.sort(configSourceComparator);
+
+        ServiceLoader<Converter> converterServiceLoader = ServiceLoader.load(Converter.class, classLoader);
+        converterServiceLoader.forEach((c)->{
+            try {
+                converters.put(c.getClass().getDeclaredMethod("convert", String.class).getReturnType().getName(), c);
+            } catch (NoSuchMethodException e) {
+
+            }
+        });
     }
 
     @Override
     public <T> T getValue(String propertyName, Class<T> propertyType) {
         String propertyValue = getPropertyValue(propertyName);
-        // String 转换成目标类型
-        return null;
+        Converter<T> converter = converters.get(propertyType.getName());
+        return converter.convert(propertyValue);
     }
 
     @Override
